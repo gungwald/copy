@@ -1,0 +1,42 @@
+# Builds online
+
+# Requirements:
+# 1. Gmake must be used.
+# 2. The cc65 compiler must be properly setup.
+
+ifndef CC65_TARGET
+	CC65_TARGET:=apple2enh
+endif
+
+CC=cl65
+CFLAGS=-O -t $(CC65_TARGET) -DTRACE
+# The -S $6000 makes the start address $6000 so that both hi-res
+# pages are available.
+LDFLAGS=-t $(CC65_TARGET) -u __EXEHDR__ --start-addr 0x6000
+PGM=online
+DISK_VOL=$(PGM)
+DISK=$(DISK_VOL).dsk
+BASIC_AUX_TYPE=0x0801
+READ_TIME_LOAD_ADDR=0x0260
+AC=java -jar AppleCommander-ac-1.4.0.jar
+SYS_LOAD_ADDR=0x2000
+BIN_LOAD_ADDR=0x0803
+
+########################################
+
+all: $(DISK)
+
+$(DISK): $(PGM) 
+	$(RM) $(DISK)
+	$(AC) -pro140 $(DISK) $(DISK_VOL)
+	$(AC) -as $(DISK) $(PGM) BIN < $(PGM)
+
+$(PGM): $(PGM).o
+	$(CC) $(LDFLAGS) -o $@ $^
+
+$(PGM).o: $(PGM).c
+	$(CC) $(CFLAGS) $(PGM).c
+
+clean:
+	$(RM) *.o $(PGM) $(DISK)
+

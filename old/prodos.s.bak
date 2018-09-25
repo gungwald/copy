@@ -1,0 +1,36 @@
+        .export _mliGetFileInfo
+        .export _mliSetFileInfo
+
+SET_FILE_INFO   =   $c3             ;Code for system call
+GET_FILE_INFO   =   $c4             ;Code for system call
+PRODOS_MLI      =   $bf00           ;Address for MLI subroutine entry point
+
+.proc       _mliGetFileInfo
+            sta     fileInfo        ;Store low-byte of C address param
+            stx     fileInfo+1      ;Store high-byte of C address param
+            jsr     PRODOS_MLI      ;Call MLI subroutine
+            .byte   GET_FILE_INFO   ;Identify the system call
+fileInfo:   .addr   $0000           ;Address of system call args
+            ldx     #0              ;Zero high byte of int return value
+            rts                     ;Accum has error code, low byte of int
+.endproc
+
+.proc       _mliSetFileInfo
+            sta     fileInfo        ;Store low-byte of C address param
+            stx     fileInfo+1      ;Store high-byte of C address param
+            jsr     PRODOS_MLI      ;Call MLI subroutine
+            .byte   SET_FILE_INFO   ;Identify the system call
+fileInfo:   .addr   $0000           ;Address of system call args
+            ldx     #0              ;Zero high byte of int return value
+            rts                     ;Accumulator has error code
+.endproc
+
+; BSS is Block Started by Symbol for zero-initialized read/write data
+; Constructed by loader and zeroed out based on required size
+
+            .bss
+
+; DATA segment contains initialized read/write data - encoded into binary
+
+            .data
+

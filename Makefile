@@ -1,44 +1,30 @@
-# Builds copy command
-
-# Requirements:
-# 1. Gmake must be used.
-# 2. The cc65 compiler must be properly setup.
-
-ifndef CC65_TARGET
-	CC65_TARGET:=apple2enh
+# Compiles with https://www.brutaldeluxe.fr/products/crossdevtools/merlin/
+#
+ifeq ($(OS),Windows_NT)
+    MERLIN_DIR=C:/opt/Merlin32_v1.0
+    MERLIN_LIB=$(MERLIN_DIR)/Library
+    MERLIN=$(MERLIN_DIR)/Windows/Merlin32
+    RM=del /s
+else
+    MERLIN_DIR=$(HOME)/opt/Merlin32_v1.0
+    MERLIN_LIB=$(MERLIN_DIR)/Library
+    MERLIN=$(MERLIN_DIR)/Linux64/Merlin32
+    RM=rm -f
 endif
 
-CC=cl65
-CFLAGS=-O -t $(CC65_TARGET) -DTRACE
-LDFLAGS=-t $(CC65_TARGET)
-PGM=copy
-DISK_VOL=$(PGM)
-DISK=$(DISK_VOL).dsk
 AC=java -jar AppleCommander-ac-1.4.0.jar
-SYS_LOAD_ADDR=0x2000
-BIN_LOAD_ADDR=0x0803
-BASIC_AUX_TYPE=0x0801
-READ_TIME_LOAD_ADDR=0x0260
-MKDISK=$(AC) -pro140 $(DISK) $(DISK_VOL)
+SRC=copy.s
+PGM=copy
+VOL=$(PGM)
+DSK=$(PGM).dsk
 
-########################################
+$(DSK): $(PGM)
+	$(AC) -pro140 $(DSK) $(VOL)
+	$(AC) -p $(DSK) $(PGM) SYS < $(PGM)
 
-all: $(DISK)
-
-$(DISK): $(PGM) 
-	$(RM) $(DISK)
-	$(AC) -pro140 $(DISK) $(DISK_VOL)
-	$(AC) -as $(DISK) $(PGM) BIN < $(PGM)
-
-$(PGM): online.o $(PGM).o
-	$(CC) $(LDFLAGS) -o $@ $^
-
-$(PGM).o: $(PGM).c
-	$(CC) $(CFLAGS) $^
-
-online.o: online.c
-	$(CC) $(CFLAGS) $^
+$(PGM): $(SRC)
+	$(MERLIN) $(MERLIN_LIB) $(SRC)
 
 clean:
-	$(RM) *.o $(PGM) $(DISK)
+	$(RM) $(DSK) $(PGM)
 

@@ -1,33 +1,55 @@
+#include <stdio.h>
 #include <stdint.h>
 
 #define PRODOS_MLI 0xbf00
-#define ON_LINE_SYSTEM_CALL 0xc5
-#define PRODOS_FILE_NAME_MAX_LEN 15
-typedef char ProdosFileName[PRODOS_FILE_NAME_MAX_LEN + 1];
-typedef ProdosFileName ProdosFileNameArray16[16];
-typedef struct OnlineSystemCallArguments {
+#define ON_LINE (uint8_t) 0xc5
+#define PRODOS_NAME_CAPACITY 16
+
+struct OnlineArguments {
     uint8_t argumentCount;
     uint8_t unitNumber;
-    ProdosFileNameArray16 *volumesOutputBuffer;
-} OnlineSystemCallArguments;
+    char **volumes;
+};
 
-static ProdosFileNameArray16 volumes;
-static OnlineSystemCallArguments arguments;
+struct OnlineArguments arguments;
+char volumes[16][PRODOS_NAME_CAPACITY];
+uint8_t argumentsAddrLowByte;
+uint8_t argumentsAddrHighByte;
 
-ProdosFileNameArray16 *online(uint8_t *errorCode)
+void online(void)
 {
     arguments.argumentCount = 2;
     arguments.unitNumber = 0; // All units
-    arguments.volumesOutputBuffer = &volumes;
+    arguments.volumes = volumes;
+
+    __asm__("lda #%b", ON_LINE);
+    __asm__("sta %g", l1);
+    
+    argumentsAddrLowByte = (uint8_t) &arguments;
+    argumentsAddrLowByte = (uint8_t) &arguments >> 4;
+
+    __asm__("lda %v", argumentsAddrLowByte);
+    __asm__("sta %g", l2);
+
+    __asm__("lda %v", argumentsAddrHighByte);
+    __asm__("sta %g", l3);
     
     __asm__("jsr %w", PRODOS_MLI);
-    __asm__("db  %b", ON_LINE_SYSTEM_CALL);
-    __asm__("da  %v", &arguments);
+l1:
+    __asm__("nop");
+l2:
+    __asm__("nop");
+l3:
+    __asm__("nop");
     __asm__("bne %g", errorHandler);
 
-    return &volumes;
-
 errorHandler:
-    return errorCode;
+    fprintf(stderr, "Online system call failed\n");
+}
+
+void main(void)
+{
+    online();
+    puts(volumes[0]);
 }
 
