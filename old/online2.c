@@ -22,6 +22,7 @@ void online(void)
     arguments.unitNumber = 0; // All units
     arguments.volumes = volumes;
 
+    __asm__(".byte 1");
     __asm__("lda #%b", ON_LINE);
     __asm__("sta %g", l1);
     
