@@ -1,54 +1,59 @@
 #include <stdio.h>      /* fopen, fread, fwrite, fclose */
 #include <stdbool.h>
 #include <stdlib.h>     /* atexit */
+#include <string.h>
+#include "libgen.h"	/* basename */
 
-#include "fileinfo.h"
 #include "prodos.h"
+#include "prodosext.h"
 #include "cui.h"
 
-#define BUFFER_SIZE 2048
+#define BF_SIZ 2048
 
 void cleanup(void);
 FILE *openFile(const char *name, const char *mode);
 void closeFile(FILE *f, const char *name);
 void concatPath(char *dest, const char *src);
 
-char sourceName[PRODOS_PATH_MAX + 1];
+char srcName[PRODOS_PATH_MAX + 1];
 char destName[PRODOS_PATH_MAX + 1];
-FILE *sourceFile = NULL;
-FILE *destFile = NULL;
-struct FileInfo sourceInfo;
-struct FileInfo destInfo;
+FILE *src = NULL;
+FILE *dest = NULL;
+struct GetFileInfoParams srcInfo;
+struct GetFileInfoParams destInfo;
 size_t n;
-char buffer[BUFFER_SIZE];
+char buf[BF_SIZ];
 size_t bytesRead;
 
 void main(void)
 {
     atexit(cleanup);
 
-    inputFileName("Source file or directory:", sourceName, sizeof(sourceName), &sourceInfo);
-    inputFileName("Destination file or directory:", destName, sizeof(destName), &destInfo);
+    if (! inputFileName("Source file or directory:", srcName, 
+        sizeof(srcName), &srcInfo))
+        return;
 
-    sourceFile = openFile(sourceName, "r");
+    if (! inputFileName("Destination file or directory:", destName, 
+        sizeof(destName), &destInfo))
+        return;
 
-    if (isDir(&destInfo)) {
-        concatPath(destName, basename(sourceName));
-    }
+    src = openFile(srcName, "r");
 
-    destFile = openFile(destName, "w");
+    if (isDirectory(&destInfo))
+        concatPath(destName, basename(srcName));
 
-    while ((bytesRead = fread(buffer, 1, sizeof(buffer), sourceFile)) == BUFFER_SIZE) {
-        if (fwrite(buffer, 1, bytesRead, destFile) < bytesRead) {
+    dest = openFile(destName, "w");
+
+    while ((bytesRead = fread(buf, 1, sizeof(buf), src)) == BF_SIZ)
+        if (fwrite(buf, 1, bytesRead, dest) < bytesRead) {
             perror(destName);
             break;
         }
-    }
-    if (bytesRead > 0 && !feof(destFile) && !ferror(destFile)) {
-        if (fwrite(buffer, 1, bytesRead, destFile) < bytesRead) {
+
+    if (bytesRead > 0 && !feof(dest) && !ferror(dest))
+        if (fwrite(buf, 1, bytesRead, dest) < bytesRead)
             perror(destName);
-        }
-    }
+
     cleanup();
 }
 
@@ -83,7 +88,7 @@ void concatPath(char *dest, const char *src)
 
 void cleanup(void)
 {
-    closeFile(destFile, destName);
-    closeFile(sourceFile, sourceName);
+    closeFile(dest, destName);
+    closeFile(src, srcName);
 }
 

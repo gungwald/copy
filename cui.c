@@ -3,27 +3,44 @@
 #include <string.h>     /* strlen */
 
 #include "cui.h"
-#include "fileinfo.h"
+#include "prodos.h"
+#include "prodosext.h"
+
+#define ESC '\x1b'
 
 static char *readLine(char *line, size_t capacity);
 static void chomp(char *line);
 static bool complete;
+static uint8_t result;
 
-void inputFileName(const char *prompt, char *name, size_t capacity, struct FileInfo *f)
+bool inputFileName(const char *prompt, char *name, 
+    size_t capacity, 
+    struct GetFileInfoParams *params)
 {
     complete = false;
 
     while (! complete) {
         printf(prompt);
         readLine(name, capacity);
-        initFileInfo(f, name);
-        if (exists(f)) {
+        if (strlen(name) == 0) {
+            puts("Aborting");
+            break;
+        }
+        else if (name[0] == ESC) {
+            puts("Escaping");
+            break;
+        }
+        params->param_count = GET_FILE_INFO_PARAM_COUNT;
+        params->pathname = name;
+        printf("params address = %x\n", &(params->param_count));
+        printf("params address = %x\n", params);
+        result = get_file_info(params);
+        if (result == PRODOS_E_NONE)
             complete = true;
-        }
-        else {
-            fprintf(stderr, "File '%s' does not exist\n", name);
-        }
+        else
+            fprintf(stderr, "%s: %s (code %d)\n", name, getMessage(result), result);
     }
+    return complete;
 }
 
 char *readLine(char *line, size_t capacity)
@@ -32,9 +49,8 @@ char *readLine(char *line, size_t capacity)
 
     if ((result = fgets(line, capacity, stdin)) != NULL)
         chomp(line);
-    else
-        if (ferror(stdin))
-            perror("stdin");
+    else if (ferror(stdin))
+        perror("stdin");
 
     return result;
 }
