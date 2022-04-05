@@ -1,7 +1,18 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include <apple2_filetype.h>
 #include "prodos.h"
 #include "prodosext.h"
+#include "io.h"
+
+uint8_t getFileInfo(FilePath name, struct GetFileInfoParams *params)
+{
+    params->param_count = GET_FILE_INFO_PARAM_COUNT;
+    params->pathname = name;
+    printf("params address = %x\n", &(params->param_count));
+    printf("params address = %x\n", params);
+    return get_file_info(params);
+}
 
 bool isDirectory(struct GetFileInfoParams *params)
 {

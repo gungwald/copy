@@ -3,11 +3,6 @@
 
 #include <stdint.h>
 
-/* PATH_MAX POSIX constant
-   ProDOS has a 64 char prefix that can be combined 
-   with partial pathname of 64 characters. This is
-   a total of 128 characters. */
-#define PRODOS_PATH_MAX 128
 #define PRODOS_FILE_NAME_MAX 15
 
 #define PRODOS_E_NONE 0x00

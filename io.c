@@ -1,8 +1,7 @@
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>     /* strlen */
 
-#include "cui.h"
+#include "io.h"
 #include "prodos.h"
 #include "prodosext.h"
 
@@ -13,15 +12,13 @@ static void chomp(char *line);
 static bool complete;
 static uint8_t result;
 
-bool inputFileName(const char *prompt, char *name, 
-    size_t capacity, 
-    struct GetFileInfoParams *params)
+bool inputFileName(const char *prompt, FilePath name) 
 {
     complete = false;
 
     while (! complete) {
         printf(prompt);
-        readLine(name, capacity);
+        readLine(name, sizeof(name));
         if (strlen(name) == 0) {
             puts("Aborting");
             break;
@@ -30,15 +27,6 @@ bool inputFileName(const char *prompt, char *name,
             puts("Escaping");
             break;
         }
-        params->param_count = GET_FILE_INFO_PARAM_COUNT;
-        params->pathname = name;
-        printf("params address = %x\n", &(params->param_count));
-        printf("params address = %x\n", params);
-        result = get_file_info(params);
-        if (result == PRODOS_E_NONE)
-            complete = true;
-        else
-            fprintf(stderr, "%s: %s (code %d)\n", name, getMessage(result), result);
     }
     return complete;
 }
